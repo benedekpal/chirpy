@@ -19,7 +19,8 @@ func main() {
 	}
 
 	// Serve static files
-	mux.Handle("/", http.FileServer(http.Dir(filepathRoot)))
+	mux.Handle("/app/", http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot))))
+	mux.HandleFunc("/healthz", handlerReadiness)
 
 	err := server.ListenAndServe()
 	//log.Fatal(srv.ListenAndServe())
