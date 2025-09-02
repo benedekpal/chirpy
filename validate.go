@@ -3,7 +3,31 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"slices"
+	"strings"
 )
+
+type Mask struct {
+	UnAllowed   []string //:= ["kerfuffle", "sharbert", "fornax"]
+	Replacement string
+}
+
+func NewProfaneWordsMask() Mask {
+	return Mask{
+		UnAllowed:   []string{"kerfuffle", "sharbert", "fornax"},
+		Replacement: "****",
+	}
+}
+
+func (m *Mask) censureString(s string) string {
+	parts := strings.Split(s, " ")
+	for i, word := range parts {
+		if slices.Contains(m.UnAllowed, strings.ToLower(word)) {
+			parts[i] = m.Replacement
+		}
+	}
+	return strings.Join(parts, " ")
+}
 
 func (cfg *apiConfig) validateChirp(w http.ResponseWriter, r *http.Request) {
 
@@ -11,7 +35,8 @@ func (cfg *apiConfig) validateChirp(w http.ResponseWriter, r *http.Request) {
 		Body string `json:"body"`
 	}
 	type returnVals struct {
-		Valid bool `json:"valid"`
+		Valid        bool   `json:"valid"`
+		Cleaned_body string `json:"cleaned_body"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -28,8 +53,11 @@ func (cfg *apiConfig) validateChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	mask := NewProfaneWordsMask()
+
 	respondWithJSON(w, http.StatusOK, returnVals{
-		Valid: true,
+		Valid:        true,
+		Cleaned_body: mask.censureString(params.Body),
 	})
 
 }
