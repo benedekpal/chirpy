@@ -46,8 +46,8 @@ func main() {
 	handler := http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))
 	mux.Handle("/app/", config.middlewareMetricsInc(handler))
 	mux.HandleFunc("GET /api/healthz", app.handlerReadiness)
-	mux.HandleFunc("GET /api/metrics", config.readMetrics)
-	mux.HandleFunc("POST /api/reset", config.resetMetrics)
+	mux.HandleFunc("GET /admin/metrics", config.readMetrics)
+	mux.HandleFunc("POST /admin/reset", config.resetMetrics)
 
 	// after init:
 	app.ready.Store(true)

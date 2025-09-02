@@ -3,12 +3,26 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 )
 
 func (cfg *apiConfig) readMetrics(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Hits: %d", cfg.fileserverHits.Load())
+
+	data, err := os.ReadFile("./local/metrics_template.html")
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		fmt.Println("Error reading file:", err)
+		return
+	}
+
+	result := fmt.Sprintf(string(data), cfg.fileserverHits.Load())
+
+	_, err = w.Write([]byte(result))
+	if err != nil {
+		fmt.Println("Error writing response:", err)
+	}
 }
 
 func (cfg *apiConfig) resetMetrics(w http.ResponseWriter, r *http.Request) {
