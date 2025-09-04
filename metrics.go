@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 func (cfg *apiConfig) readMetrics(w http.ResponseWriter, r *http.Request) {
@@ -26,8 +28,21 @@ func (cfg *apiConfig) readMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *apiConfig) resetMetrics(w http.ResponseWriter, r *http.Request) {
+	godotenv.Load()
+	platform := os.Getenv("PLATFORM")
+
+	if platform != "dev" {
+		respondWithError(w, http.StatusForbidden, "Forbidden", nil)
+		return
+	}
+
+	err := cfg.db.ClearUsers(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusForbidden, "Couldn't clear users table", err)
+		return
+	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	cfg.fileserverHits.Store(0)
-	w.Write([]byte("fileserverHits reseted to 0"))
+	w.Write([]byte("fileserverHits reseted to 0\nCleared Users table"))
 }

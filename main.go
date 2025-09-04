@@ -13,13 +13,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type App struct {
-	ready atomic.Bool
-}
-
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
+	ready          atomic.Bool
 }
 
 func main() {
@@ -38,13 +35,16 @@ func main() {
 	dbURL := os.Getenv("DB_URL")
 
 	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatalf("error opening database: %v", err)
+	}
 
 	dbQueries := database.New(db)
 
 	const port = "8080"
 	const filepathRoot = "./public"
 
-	app := &App{}
+	//app := &App{}
 
 	config := &apiConfig{}
 	config.fileserverHits.Store(0)
@@ -61,13 +61,15 @@ func main() {
 
 	handler := http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))
 	mux.Handle("/app/", config.middlewareMetricsInc(handler))
-	mux.HandleFunc("GET /api/healthz", app.handlerReadiness)
+	mux.HandleFunc("GET /api/healthz", config.handlerReadiness)
 	mux.HandleFunc("POST /api/validate_chirp", config.validateChirp)
+	mux.HandleFunc("POST /api/users", config.handlerAddUser)
 	mux.HandleFunc("GET /admin/metrics", config.readMetrics)
 	mux.HandleFunc("POST /admin/reset", config.resetMetrics)
 
 	// after init:
-	app.ready.Store(true)
+	//app.ready.Store(true)
+	config.ready.Store(true)
 
 	err = server.ListenAndServe()
 	//log.Fatal(srv.ListenAndServe())
