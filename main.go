@@ -1,10 +1,16 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
+	"os"
 	"sync/atomic"
 	"time"
+
+	"github.com/benedekpal/chirpy/internal/database"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 type App struct {
@@ -13,9 +19,11 @@ type App struct {
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
+	db             *database.Queries
 }
 
 func main() {
+
 	// little fun for showing uptime for myselfe
 	defer func(start time.Time) {
 		log.Printf("took %s", time.Since(start))
@@ -26,6 +34,13 @@ func main() {
 	//	log.Printf("took %s", time.Since(start))
 	//}()
 
+	godotenv.Load()
+	dbURL := os.Getenv("DB_URL")
+
+	db, err := sql.Open("postgres", dbURL)
+
+	dbQueries := database.New(db)
+
 	const port = "8080"
 	const filepathRoot = "./public"
 
@@ -33,6 +48,7 @@ func main() {
 
 	config := &apiConfig{}
 	config.fileserverHits.Store(0)
+	config.db = dbQueries
 
 	// Create a new ServeMux
 	mux := http.NewServeMux()
@@ -53,7 +69,7 @@ func main() {
 	// after init:
 	app.ready.Store(true)
 
-	err := server.ListenAndServe()
+	err = server.ListenAndServe()
 	//log.Fatal(srv.ListenAndServe())
 
 	if err != nil {
