@@ -17,6 +17,8 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	ready          atomic.Bool
+	dbURL          string
+	platform       string
 }
 
 func main() {
@@ -33,6 +35,7 @@ func main() {
 
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
+	platform := os.Getenv("PLATFORM")
 
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -49,6 +52,8 @@ func main() {
 	config := &apiConfig{}
 	config.fileserverHits.Store(0)
 	config.db = dbQueries
+	config.platform = platform
+	config.dbURL = dbURL
 
 	// Create a new ServeMux
 	mux := http.NewServeMux()
@@ -62,10 +67,12 @@ func main() {
 	handler := http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))
 	mux.Handle("/app/", config.middlewareMetricsInc(handler))
 	mux.HandleFunc("GET /api/healthz", config.handlerReadiness)
-	mux.HandleFunc("POST /api/validate_chirp", config.validateChirp)
+	mux.HandleFunc("POST /api/validate_chirp", config.handlerChirps)
 	mux.HandleFunc("POST /api/users", config.handlerAddUser)
 	mux.HandleFunc("GET /admin/metrics", config.readMetrics)
 	mux.HandleFunc("POST /admin/reset", config.resetMetrics)
+	mux.HandleFunc("POST /api/chirps", config.validateAndSaveChirp)
+	mux.HandleFunc("GET /api/chirps", config.retrieveAllChirps)
 
 	// after init:
 	//app.ready.Store(true)
