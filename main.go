@@ -73,6 +73,7 @@ func main() {
 	mux.HandleFunc("POST /admin/reset", config.resetMetrics)
 	mux.HandleFunc("POST /api/chirps", config.validateAndSaveChirp)
 	mux.HandleFunc("GET /api/chirps", config.retrieveAllChirps)
+	mux.HandleFunc("GET /api/chirps/{chirpID}", config.retrieveChirpByID)
 
 	// after init:
 	//app.ready.Store(true)

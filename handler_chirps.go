@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -85,4 +86,39 @@ func (cfg *apiConfig) retrieveAllChirps(w http.ResponseWriter, r *http.Request) 
 		})
 	}
 	respondWithJSON(w, http.StatusOK, chirps)
+}
+
+func (cfg *apiConfig) retrieveChirpByID(w http.ResponseWriter, r *http.Request) {
+
+	type response struct {
+		Chirp
+	}
+
+	chirpID := r.PathValue("chirpID")
+	if chirpID == "" {
+		respondWithError(w, http.StatusNotFound, "Couldn't retrieve chirps", errors.New("chirpID is missing from path"))
+		return
+	}
+
+	id, err := uuid.Parse(chirpID)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "Couldn't parse chirpID", err)
+		return
+	}
+
+	chirp, err := cfg.db.GetChirpsByID(r.Context(), id)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "Couldn't retrieve chirp", err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, response{
+		Chirp: Chirp{
+			ID:        chirp.ID,
+			CreatedAt: chirp.CreatedAt,
+			UpdatedAt: chirp.UpdatedAt,
+			Body:      chirp.Body,
+			UserID:    chirp.UserID,
+		},
+	})
 }

@@ -12,3 +12,7 @@ RETURNING *;
 -- name: GetChirps :many
 SELECT * FROM chirps
 ORDER BY created_at ASC NULLS LAST;
+
+-- name: GetChirpsByID :one
+SELECT * FROM chirps
+WHERE chirps.id=$1;
