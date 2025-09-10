@@ -74,6 +74,7 @@ func main() {
 	mux.HandleFunc("POST /api/chirps", config.validateAndSaveChirp)
 	mux.HandleFunc("GET /api/chirps", config.retrieveAllChirps)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", config.retrieveChirpByID)
+	mux.HandleFunc("POST /api/login", config.handlerLogin)
 
 	// after init:
 	//app.ready.Store(true)
