@@ -19,6 +19,7 @@ type apiConfig struct {
 	ready          atomic.Bool
 	dbURL          string
 	platform       string
+	jwtSecret      string
 }
 
 func main() {
@@ -36,6 +37,7 @@ func main() {
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
 	platform := os.Getenv("PLATFORM")
+	secret := os.Getenv("SECRET")
 
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -54,6 +56,7 @@ func main() {
 	config.db = dbQueries
 	config.platform = platform
 	config.dbURL = dbURL
+	config.jwtSecret = secret
 
 	// Create a new ServeMux
 	mux := http.NewServeMux()

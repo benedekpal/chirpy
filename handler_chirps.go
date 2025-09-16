@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/benedekpal/chirpy/internal/auth"
 	"github.com/benedekpal/chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -28,17 +29,23 @@ func (cfg *apiConfig) validateAndSaveChirp(w http.ResponseWriter, r *http.Reques
 		Chirp
 	}
 
-	decoder := json.NewDecoder(r.Body)
-	params := parameters{}
-	err := decoder.Decode(&params)
+	token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
+		respondWithError(w, http.StatusUnauthorized, "Token not provided", err)
 		return
 	}
 
-	userId, err := uuid.Parse(params.UserId)
+	userid, err := auth.ValidateJWT(token, cfg.jwtSecret)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't decode UserId", err)
+		respondWithError(w, http.StatusUnauthorized, "Token not provided", err)
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err = decoder.Decode(&params)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
 		return
 	}
 
@@ -52,7 +59,7 @@ func (cfg *apiConfig) validateAndSaveChirp(w http.ResponseWriter, r *http.Reques
 
 	newChirp, err := cfg.db.CreateChirp(r.Context(), database.CreateChirpParams{
 		Body:   mask.censureString(params.Body),
-		UserID: userId,
+		UserID: userid,
 	})
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't save new chirp", err)
@@ -65,7 +72,7 @@ func (cfg *apiConfig) validateAndSaveChirp(w http.ResponseWriter, r *http.Reques
 			CreatedAt: newChirp.CreatedAt,
 			UpdatedAt: newChirp.UpdatedAt,
 			Body:      newChirp.Body,
-			UserID:    newChirp.UserID,
+			UserID:    userid,
 		},
 	})
 
