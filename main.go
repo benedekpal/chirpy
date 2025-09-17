@@ -78,6 +78,8 @@ func main() {
 	mux.HandleFunc("GET /api/chirps", config.retrieveAllChirps)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", config.retrieveChirpByID)
 	mux.HandleFunc("POST /api/login", config.handlerLogin)
+	mux.HandleFunc("POST /api/refresh", config.refreshAccessToken)
+	mux.HandleFunc("POST /api/revoke", config.revokeAccessToken)
 
 	// after init:
 	//app.ready.Store(true)
