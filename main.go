@@ -80,6 +80,7 @@ func main() {
 	mux.HandleFunc("POST /api/login", config.handlerLogin)
 	mux.HandleFunc("POST /api/refresh", config.refreshAccessToken)
 	mux.HandleFunc("POST /api/revoke", config.revokeAccessToken)
+	mux.HandleFunc("DELETE /api/chirps/{chirpID}", config.deleteChirpByID)
 
 	// after init:
 	//app.ready.Store(true)

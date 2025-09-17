@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -128,4 +129,55 @@ func (cfg *apiConfig) retrieveChirpByID(w http.ResponseWriter, r *http.Request) 
 			UserID:    chirp.UserID,
 		},
 	})
+}
+
+func (cfg *apiConfig) deleteChirpByID(w http.ResponseWriter, r *http.Request) {
+
+	chirpID := r.PathValue("chirpID")
+	if chirpID == "" {
+		respondWithError(w, http.StatusNotFound, "Couldn't retrieve chirps", errors.New("chirpID is missing from path"))
+		return
+	}
+
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Token not provided", err)
+		return
+	}
+
+	chirpUUID, err := uuid.Parse(chirpID)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid chirpID format", err)
+		return
+	}
+
+	userid, err := auth.ValidateJWT(token, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Token not provided", err)
+		return
+	}
+
+	chirp, err := cfg.db.GetChirpsByID(r.Context(), chirpUUID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			respondWithError(w, http.StatusNotFound, "Chirp not found", err)
+			return
+		}
+		respondWithError(w, http.StatusInternalServerError, "Could not get Chirp", err)
+		return
+	}
+
+	if chirp.UserID != userid {
+		respondWithError(w, http.StatusForbidden, "Not your chirp access denied", err)
+		return
+	}
+
+	err = cfg.db.DeleteChirpByID(r.Context(), chirpUUID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not delete Chirp", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+
 }
