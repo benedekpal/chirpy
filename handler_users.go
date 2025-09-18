@@ -68,3 +68,67 @@ func (a *apiConfig) handlerAddUser(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 }
+
+func (a *apiConfig) updateUser(w http.ResponseWriter, r *http.Request) {
+
+	type parameters struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	type response struct {
+		User
+	}
+
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Token not provided", err)
+		return
+	}
+
+	userid, err := auth.ValidateJWT(token, a.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Token not provided", err)
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err = decoder.Decode(&params)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
+		return
+	}
+
+	hashedPassWord, hErr := auth.HashPassword(params.Password)
+	if hErr != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't hash password", hErr)
+		return
+	}
+	if hashedPassWord == "" {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't hash password", hErr)
+		return
+	}
+
+	updatedUser, err := a.db.UpdateUserCredentials(r.Context(), database.UpdateUserCredentialsParams{
+		HashedPassword: sql.NullString{
+			String: hashedPassWord,
+			Valid:  true,
+		},
+		Email: params.Email,
+		ID:    userid,
+	})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't update user", err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, response{
+		User: User{
+			ID:        updatedUser.ID,
+			CreatedAt: updatedUser.CreatedAt,
+			UpdatedAt: updatedUser.UpdatedAt,
+			Email:     updatedUser.Email,
+		},
+	})
+}
