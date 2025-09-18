@@ -82,6 +82,7 @@ func main() {
 	mux.HandleFunc("POST /api/refresh", config.refreshAccessToken)
 	mux.HandleFunc("POST /api/revoke", config.revokeAccessToken)
 	mux.HandleFunc("DELETE /api/chirps/{chirpID}", config.deleteChirpByID)
+	mux.HandleFunc("POST /api/polka/webhooks", config.udpadeUserStatus)
 
 	// after init:
 	//app.ready.Store(true)
