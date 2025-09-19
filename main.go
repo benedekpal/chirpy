@@ -20,6 +20,7 @@ type apiConfig struct {
 	dbURL          string
 	platform       string
 	jwtSecret      string
+	polkaKey       string
 }
 
 func main() {
@@ -38,6 +39,7 @@ func main() {
 	dbURL := os.Getenv("DB_URL")
 	platform := os.Getenv("PLATFORM")
 	secret := os.Getenv("SECRET")
+	polka := os.Getenv("POLKA_KEY")
 
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -57,6 +59,7 @@ func main() {
 	config.platform = platform
 	config.dbURL = dbURL
 	config.jwtSecret = secret
+	config.polkaKey = polka
 
 	// Create a new ServeMux
 	mux := http.NewServeMux()

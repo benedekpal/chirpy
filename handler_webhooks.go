@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/benedekpal/chirpy/internal/auth"
 	"github.com/benedekpal/chirpy/internal/database"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -23,9 +24,19 @@ func (cfg *apiConfig) udpadeUserStatus(w http.ResponseWriter, r *http.Request) {
 		} `json:"data"`
 	}
 
+	polkaKey, err := auth.GetAPIKey(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Couldn't decode Authorization header", err)
+		return
+	}
+	if polkaKey != cfg.polkaKey {
+		respondWithError(w, http.StatusUnauthorized, "Provide the correct Polka API key", errors.New("incorrect polka api key"))
+		return
+	}
+
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
 		return
